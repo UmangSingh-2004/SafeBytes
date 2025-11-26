@@ -1,11 +1,9 @@
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.UUID;
 
 public class SafeBytes {
@@ -13,13 +11,12 @@ public class SafeBytes {
     static final String USER = "root";
     static final String PASSWORD = "Umang@8933";
     public static void main(String[] args) {
-        UUID uniqueID = UUID.randomUUID();//for unique id's
         //Making connection
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             Connection co = DriverManager.getConnection(URL,USER,PASSWORD);
             //Making Jfram
-            JFrame f = new JFrame();
+            JFrame mainFrame = new JFrame();
             ImageIcon logo = new ImageIcon("src/res/icons.png");
             // Create components
             //   name
@@ -34,8 +31,11 @@ public class SafeBytes {
             JTextField password = new JTextField();
             password.setFont(new Font("Copperplate Gothic Bold",Font.PLAIN,15));
 
+            //button
             JButton submit = new JButton("Submit");
             submit.setFont(new Font("Algerian",Font.PLAIN,12));
+
+            //seeAll
             JButton seeAll = new JButton("Saved Passwords");
             seeAll.setFont(new Font("Algerian",Font.PLAIN,12));
 
@@ -48,22 +48,21 @@ public class SafeBytes {
             seeAll.setBounds(170, 120, 140, 30);
 
             // Add components to the frame
-            f.add(nameOfSite);
-            f.add(name);
-            f.add(passwordOSite);
-            f.add(password);
-            f.add(submit);
-            f.add(seeAll);
+            mainFrame.add(nameOfSite);
+            mainFrame.add(name);
+            mainFrame.add(passwordOSite);
+            mainFrame.add(password);
+            mainFrame.add(submit);
+            mainFrame.add(seeAll);
 
             // Adding
             submit.addActionListener(new ActionListener() {
             @Override
                 public void actionPerformed(ActionEvent e) {
-                    String insertQuery = "INSERT INTO SafeBytes(id, name, password) VALUES (?, ?, ?)";
-                        String idString = uniqueID.toString();
+                    String insertQuery = "INSERT INTO save_password(id, name, password) VALUES (?, ?, ?)";
                     try{
                         PreparedStatement pstm = co.prepareStatement(insertQuery);
-                        pstm.setString(1,uniqueID.toString());
+                        pstm.setString(1, UUID.randomUUID().toString());
                         pstm.setString(2, name.getText());
                         pstm.setString(3, password.getText());
                         pstm.executeUpdate();
@@ -73,21 +72,44 @@ public class SafeBytes {
                 }
             });
             //Seeing all passwords
-            seeAll.addActionListener(new ActionListener() {
+            seeAll.addActionListener(new ActionListener()  {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-
+                    try {
+                        JFrame seeAllFrame = new JFrame();
+                        // Create table model
+                        DefaultTableModel model = new DefaultTableModel();
+                        model.addColumn("ID");
+                        model.addColumn("Site Name");
+                        model.addColumn("Password");
+                        JTable table = new JTable(model);
+                        // Fetch data from database 
+                        String seeAllQuery = "SELECT * FROM save_password";
+                        Statement st = co.createStatement();
+                        ResultSet rs = st.executeQuery(seeAllQuery);
+                        while (rs.next()) {
+                            int id = rs.getInt(1);
+                            String siteName = rs.getString(2);
+                            String pass = rs.getString(3);
+                            model.addRow(new Object[]{id, siteName, pass});
+                        }
+                        seeAllFrame.add(new JScrollPane(table));
+                        seeAllFrame.setSize(650, 550);
+                        seeAllFrame.setLocationRelativeTo(null);
+                        seeAllFrame.setVisible(true);
+                    }catch (Exception e1){
+                        System.out.println(e1);
+                    }
                 }
             });
-
             // Frame properties
-            f.setLocationRelativeTo(null);
-            f.setLayout(null);
-            f.setIconImage(logo.getImage());
-            f.setTitle("SafeBytes");
-            f.setSize(350, 200);
-            f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            f.setVisible(true);
+            mainFrame.setLocationRelativeTo(null);
+            mainFrame.setLayout(null);
+            mainFrame.setIconImage(logo.getImage());
+            mainFrame.setTitle("SafeBytes");
+            mainFrame.setSize(350, 200);
+            mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            mainFrame.setVisible(true);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
